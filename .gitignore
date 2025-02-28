@@ -1,0 +1,57 @@
+# Compiled binary files
+*.out
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+
+# CMake build directory
+/build/
+cmake_build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.pid
+*.seed
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE-specific files
+.vscode/
+.idea/
+*.iml
+*.sln
+*.vcxproj*
+*.ncb
+*.sdf
+*.mode1v3
+*.mode2v3
+*.moc
+compile_commands.json
+
+# GTest and Catch2 build artifacts
+*.gcda
+*.gcno
+*.gcov
+test_results/
+
+# Package manager dependencies
+.vcpkg/
+conanfile.lock
+*.pyc
+*.pyo
+__pycache__/
