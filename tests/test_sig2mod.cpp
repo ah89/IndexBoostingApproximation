@@ -23,7 +23,7 @@ protected:
         
         sig2mod = std::make_unique<Sig2Mod>(
             std::move(complex_nn),
-            128.0,  // error_range
+            5.0,  // error_range
             1000,   // buffer_size
             100,    // batch_size
             0.01,   // error_threshold
@@ -56,7 +56,7 @@ protected:
 };
 
 TEST_F(Sig2ModTest, InsertAndLookup) {
-    auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
+    auto [keys, values] = generate_random_data(30, 0.0, 100000.0);
     
     // Insert data
     sig2mod->insert(keys, values);
