@@ -19,7 +19,8 @@ Sig2Mod::Sig2Mod(std::unique_ptr<ComplexNN> complex_nn,
 }
 
 void Sig2Mod::insert(const std::vector<double>& keys, const std::vector<double>& values) {
-    std::vector<double> keys_with_placeholders = placeholder_strategy_->insert_placeholders(keys, *gmm_);
+    // std::vector<double> keys_with_placeholders = placeholder_strategy_->insert_placeholders(keys, *gmm_);
+    std::vector<double> keys_with_placeholders = keys;
 
     std::vector<size_t> positions(keys.size());
     for (size_t i = 0; i < keys.size(); ++i) {
@@ -44,7 +45,7 @@ void Sig2Mod::insert(const std::vector<double>& keys, const std::vector<double>&
         std::fill(y_phi[i].begin(), y_phi[i].end(), 0.0);
     }
     
-    complex_nn_->train(X_pi, X_phi, y_pi, y_phi, 100, 0.01);
+    complex_nn_->train(X_pi, X_phi, positions, 100, 0.01);
 }
 
 double Sig2Mod::lookup(double key) {

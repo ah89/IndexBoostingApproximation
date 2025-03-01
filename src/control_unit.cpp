@@ -43,7 +43,7 @@ void ControlUnit::trigger_retraining(RadixSpline& learned_index, ComplexNN& comp
         y_phi[i] = {0, 0, 0};
     }
 
-    complex_nn.train(X_pi, X_phi, y_pi, y_phi, 100, 0.01);
+    complex_nn.train(X_pi, X_phi, batch.second, 100, 0.01);
 
     gmm.fit(batch.first);
 

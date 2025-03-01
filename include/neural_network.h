@@ -62,8 +62,7 @@ public:
     std::pair<std::vector<double>, std::vector<double>> forward(const std::vector<double>& x_pi, const std::vector<double>& x_phi);
     void train(const std::vector<std::vector<double>>& X_pi, 
                const std::vector<std::vector<double>>& X_phi,
-               const std::vector<std::vector<double>>& y_pi,
-               const std::vector<std::vector<double>>& y_phi,
+               const std::vector<size_t>& positions,
                int epochs, double learning_rate);
 
 private:
@@ -72,8 +71,9 @@ private:
     NNC nn_c;
     int N, K;
 
-    double calculateCost(const std::vector<double>& predicted, const std::vector<double>& target);
-    std::vector<double> calculateGradient(const std::vector<double>& predicted, const std::vector<double>& target);
+    double calculateCostPi(const std::vector<double>& predicted, const std::vector<size_t>& target);
+    double calculateCostPhi(const std::vector<double>& predicted, const std::vector<size_t>& target);
+    std::vector<double> calculateGradient(const std::vector<double>& predicted, const std::vector<size_t>& target);
 };
 
 #endif // NEURAL_NETWORK_H

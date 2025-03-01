@@ -9,6 +9,8 @@ RadixSpline::RadixSpline(int num_radix_bits, int max_error)
 
 void RadixSpline::build(const std::vector<double> &keys, const std::vector<size_t> &positions)
 {
+
+    update_num_radix_bits(keys.size());
     // Ensure inputs are valid
     size_t n = keys.size();
     if (n < 2)
@@ -59,7 +61,6 @@ void RadixSpline::build(const std::vector<double> &keys, const std::vector<size_
             }
         }
 
-        // If the maximum error exceeds the bound, start a new spline segment
         if (!within_error_bound)
         {
             splines_.push_back({keys[i - 1], current_slope, static_cast<double>(positions[i - 1])});
@@ -81,6 +82,7 @@ void RadixSpline::build(const std::vector<double> &keys, const std::vector<size_
                                            { return s.key < k; }) -
                           splines_.begin();
     }
+    std::cout << "The tadix table built" << std::endl;
 }
 
 size_t RadixSpline::predict(double key) const

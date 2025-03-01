@@ -215,10 +215,9 @@ std::pair<std::vector<double>, std::vector<double>> ComplexNN::forward(const std
 
 void ComplexNN::train(const std::vector<std::vector<double>>& X_pi, 
                       const std::vector<std::vector<double>>& X_phi,
-                      const std::vector<std::vector<double>>& y_pi,
-                      const std::vector<std::vector<double>>& y_phi,
+                      const std::vector<size_t>& positions,
                       int epochs, double learning_rate) {
-    if (X_pi.size() != X_phi.size() || X_pi.size() != y_pi.size() || X_pi.size() != y_phi.size()) {
+    if (X_pi.size() != X_phi.size() || X_pi.size() != positions.size() || X_pi.size() != positions.size()) {
         throw std::invalid_argument("All input and output datasets must have the same number of samples");
     }
 
@@ -233,14 +232,14 @@ void ComplexNN::train(const std::vector<std::vector<double>>& X_pi,
         for (size_t i : indices) {
             auto [out_pi, out_phi] = forward(X_pi[i], X_phi[i]);
 
-            double cost_pi = calculateCost(out_pi, y_pi[i]);
-            std::vector<double> gradient_pi = calculateGradient(out_pi, y_pi[i]);
+            double cost_pi = calculateCostPi(out_pi, positions);
+            std::vector<double> gradient_pi = calculateGradient(out_pi, positions);
 
             nn_c.backward(gradient_pi, learning_rate);
             nn_pi.backward(X_pi[i], gradient_pi, learning_rate);
 
-            double cost_phi = calculateCost(out_phi, y_phi[i]);
-            std::vector<double> gradient_phi = calculateGradient(out_phi, y_phi[i]);
+            double cost_phi = calculateCostPhi(out_phi, positions);
+            std::vector<double> gradient_phi = calculateGradient(out_phi, positions);
 
             nn_c.backward(gradient_phi, learning_rate);
             nn_phi.backward(X_phi[i], gradient_phi, learning_rate);
@@ -248,7 +247,7 @@ void ComplexNN::train(const std::vector<std::vector<double>>& X_pi,
     }
 }
 
-double ComplexNN::calculateCost(const std::vector<double>& predicted, const std::vector<double>& target) {
+double ComplexNN::calculateCostPi(const std::vector<double>& predicted, const std::vector<size_t>& target) {
     double cost = 0.0;
     for (size_t i = 0; i < predicted.size(); ++i) {
         double diff = predicted[i] - target[i];
@@ -257,7 +256,16 @@ double ComplexNN::calculateCost(const std::vector<double>& predicted, const std:
     return cost / (2 * predicted.size());
 }
 
-std::vector<double> ComplexNN::calculateGradient(const std::vector<double>& predicted, const std::vector<double>& target) {
+double ComplexNN::calculateCostPhi(const std::vector<double>& predicted, const std::vector<size_t>& target) {
+    double cost = 0.0;
+    for (size_t i = 0; i < predicted.size(); ++i) {
+        double diff = predicted[i] - target[i];
+        cost += diff * diff;
+    }
+    return cost / (2 * predicted.size());
+}
+
+std::vector<double> ComplexNN::calculateGradient(const std::vector<double>& predicted, const std::vector<size_t>& target) {
     std::vector<double> gradient(predicted.size());
     for (size_t i = 0; i < predicted.size(); ++i) {
         gradient[i] = predicted[i] - target[i];

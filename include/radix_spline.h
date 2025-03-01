@@ -1,6 +1,7 @@
 // include/radix_spline.h
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -25,4 +26,8 @@ private:
     std::vector<size_t> radix_table_;
 
     size_t get_radix_index(double key) const;
+    void update_num_radix_bits(int num_radix_bits){
+        num_radix_bits_ = ceil(log2(num_radix_bits));
+        radix_table_.resize(1 << num_radix_bits_);
+    }
 };
