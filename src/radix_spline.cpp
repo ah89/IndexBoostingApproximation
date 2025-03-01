@@ -82,7 +82,7 @@ void RadixSpline::build(const std::vector<double> &keys, const std::vector<size_
                                            { return s.key < k; }) -
                           splines_.begin();
     }
-    std::cout << "The tadix table built" << std::endl;
+    std::cout << "The radix table built" << std::endl;
 }
 
 size_t RadixSpline::predict(double key) const
@@ -95,5 +95,7 @@ size_t RadixSpline::predict(double key) const
 
 size_t RadixSpline::get_radix_index(double key) const
 {
+    if (key == splines_.back().key)
+        return radix_table_.size() - 1;
     return static_cast<size_t>((key - splines_.front().key) / (splines_.back().key - splines_.front().key) * radix_table_.size());
 }

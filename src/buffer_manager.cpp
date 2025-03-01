@@ -14,6 +14,14 @@ bool BufferManager::is_full() const {
     return buffer_.size() >= batch_size_;
 }
 
+bool BufferManager::possible_to_add(size_t new_data_size) const {
+    return buffer_.size() + new_data_size >= batch_size_;
+}
+
+size_t BufferManager::get_size() const {
+    return buffer_.size();
+}
+
 std::pair<std::vector<double>, std::vector<size_t>> BufferManager::get_batch() const {
     std::vector<double> keys;
     std::vector<size_t> values;

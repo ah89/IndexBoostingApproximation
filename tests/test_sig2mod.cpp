@@ -21,20 +21,18 @@ protected:
         int hidden_dim = 15;
         int output_dim = 3 * (N + K);
 
-        complex_nn = std::make_unique<ComplexNN>(N, K, hidden_dim, output_dim);
-
         sig2mod = std::make_unique<Sig2Mod>(
-            std::move(complex_nn),
             5.0,  // error_range
             5,    // buffer_size
             10,   // batch_size
             0.01, // error_threshold
             100,  // max_iterations
+            K,
+            N,
             15    // num_placeholders
         );
     }
 
-    std::unique_ptr<ComplexNN> complex_nn;
     std::unique_ptr<Sig2Mod> sig2mod;
 
     // Helper function to generate random data

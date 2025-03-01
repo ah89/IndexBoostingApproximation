@@ -9,14 +9,35 @@
 #include "control_unit.h"
 #include "placeholder_strategy.h"
 
+class SigmaSigmoid {
+    public:
+        SigmaSigmoid(size_t max_sigmoids);
+        void update(const std::vector<double>& new_sigmoids);
+        double adjust(double key) const;
+        bool hasUpdates() const;
+    
+    private:
+        struct SigmoidParams {
+            double A;      // Amplitude
+            double omega;  // Slope
+            double phi;    // Center
+        };
+    
+        std::vector<SigmoidParams> sigmoids_;
+        bool has_updates_;
+    };
+
+
 class Sig2Mod {
 public:
-    Sig2Mod(std::unique_ptr<ComplexNN> complex_nn,
+    Sig2Mod(
             double error_range,
             size_t buffer_size,
             size_t batch_size,
             double error_threshold,
             int max_iterations,
+            int K,
+            int N,
             int num_placeholders);
 
     void insert(const std::vector<double>& keys, const std::vector<double>& values);
@@ -31,5 +52,6 @@ private:
     std::unique_ptr<BufferManager> buffer_manager_;
     std::unique_ptr<ControlUnit> control_unit_;
     std::unique_ptr<PlaceholderStrategy> placeholder_strategy_;
+    std::unique_ptr<SigmaSigmoid> sigma_sigmoid_;
     double error_range_;
 };
