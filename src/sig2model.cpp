@@ -65,6 +65,9 @@ Sig2Model::Sig2Model(
 
 void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double> &values)
 {
+    if (keys.empty() || values.empty() || keys.size() != values.size()) {
+        throw std::invalid_argument("Keys and values must have the same non-zero size.");
+    }
 
     // For S2M-B, make this part comment
     // if(buffer_manager_->possible_to_add(keys.size())){
@@ -75,7 +78,43 @@ void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double
     // }
     //
 
-    // std::vector<double> keys_with_placeholders = placeholder_strategy_->insert_placeholders(keys, *gmm_);
+    std::vector<double> merged_keys;
+    std::vector<double> merged_values;
+
+    // Merge existing keys and new keys while keeping order
+    size_t i = 0, j = 0;
+    while (i < keys_.size() && j < keys.size()) {
+        if (keys_[i] < keys[j]) {
+            merged_keys.push_back(keys_[i]);
+            merged_values.push_back(values_[i]);
+            i++;
+        } else {
+            merged_keys.push_back(keys[j]);
+            merged_values.push_back(values[j]);
+            j++;
+        }
+    }
+
+    // Append remaining elements
+    while (i < keys_.size()) {
+        merged_keys.push_back(keys_[i]);
+        merged_values.push_back(values_[i]);
+        i++;
+    }
+    while (j < keys.size()) {
+        merged_keys.push_back(keys[j]);
+        merged_values.push_back(values[j]);
+        j++;
+    }
+
+    // Update keys and values
+    keys_ = std::move(merged_keys);
+    values_ = std::move(merged_values);
+
+
+    // For S2M-Ψ, make this part comment
+    // std::vector<double> keys_with_placeholders = placeholder_strategy_->insert_placeholders(values, *gmm_);
+
     std::vector<double> keys_with_placeholders = keys;
 
     std::vector<size_t> positions(keys.size());
@@ -91,8 +130,6 @@ void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double
     // Train the ComplexNN
     std::vector<std::vector<double>> X_pi(keys.size(), std::vector<double>(1));
     std::vector<std::vector<double>> X_phi(keys.size(), std::vector<double>(1));
-    std::vector<std::vector<double>> y_pi(keys.size(), std::vector<double>(3));
-    std::vector<std::vector<double>> y_phi(keys.size(), std::vector<double>(3));
 
     for (size_t i = 0; i < keys.size(); ++i)
     {
@@ -105,15 +142,39 @@ void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double
 
 double Sig2Model::lookup(double key)
 {
+    // First, check if the key is in the buffer
+    auto buffer_result = buffer_manager_->lookup(key);
+    if (buffer_result.has_value()) {
+        return static_cast<double>(buffer_result.value());  // Return buffered value
+    }
+
+    // If not found in buffer, proceed to learned index lookup
     size_t predicted_index = learned_index_->predict(key);
     std::vector<double> nn_input_pi = {key};
     std::vector<double> nn_input_phi = {key};
-    if (sigma_sigmoid_->hasUpdates())
+
+    if (sigma_sigmoid_->hasUpdates()) {
         auto [pi_output, phi_output] = complex_nn_->forward(nn_input_pi, nn_input_phi);
 
-    predicted_index += sigma_sigmoid_->adjust(key);
+        for (size_t i = 0; i < pi_output.size() / 3; ++i) {
+            double A = pi_output[i * 3];
+            double omega = pi_output[i * 3 + 1];
+            double phi = pi_output[i * 3 + 2];
 
-    return static_cast<double>(predicted_index);
+            predicted_index += static_cast<size_t>(A / (1 + std::exp(-omega * (key - phi))));
+        }
+    }
+
+    predicted_index += static_cast<size_t>(sigma_sigmoid_->adjust(key));
+
+    // Ensure index is within valid range
+    predicted_index = std::min(predicted_index, values_.size() - 1);
+
+    // Search for the closest value within error range
+    size_t lower_bound = std::max(static_cast<int>(predicted_index) - static_cast<int>(error_range_), 0);
+    size_t upper_bound = std::min(predicted_index + static_cast<size_t>(error_range_), values_.size() - 1);
+
+    return values_[lower_bound];  // Return first value in the range
 }
 
 void Sig2Model::update(double key, double value)

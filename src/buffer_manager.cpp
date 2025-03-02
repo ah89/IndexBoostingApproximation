@@ -42,6 +42,14 @@ std::pair<std::vector<double>, std::vector<size_t>> BufferManager::get_batch() c
     return {keys, values};
 }
 
+std::optional<size_t> BufferManager::lookup(double key) const {
+    auto it = buffer_.find(key);
+    if (it != buffer_.end()) {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
 void BufferManager::clear() {
     buffer_.clear();
 }

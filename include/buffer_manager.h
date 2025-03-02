@@ -2,7 +2,7 @@
 
 #include <map>
 #include <vector>
-#include <algorithm>
+#include <optional>
 
 class BufferManager {
 public:
@@ -14,6 +14,7 @@ public:
     size_t get_size() const;
     
     std::pair<std::vector<double>, std::vector<size_t>> get_batch() const;
+    std::optional<size_t> lookup(double key) const;  // Lookup method
     void clear();
 
 private:

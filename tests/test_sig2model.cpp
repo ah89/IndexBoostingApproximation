@@ -72,26 +72,25 @@ protected:
 //     }
 // }
 
-TEST_F(Sig2ModelTest, Update)
-{
+TEST_F(Sig2ModelTest, Update) {
     auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
 
     // Insert initial data
     sig2model->insert(keys, values);
 
-    // Perform updates
-    for (size_t i = 0; i < 10; ++i)
-    {
+    // Perform updates and track new values
+    std::map<double, double> updated_values; // Store expected updates
+    for (size_t i = 0; i < 10; ++i) {
         double new_key = keys[i] + 0.5;
         double new_value = values[i] + 100.0;
         sig2model->update(new_key, new_value);
+        updated_values[new_key] = new_value;
     }
 
     // Test lookup after updates
-    for (size_t i = 0; i < 10; ++i)
-    {
-        double result = sig2model->lookup(keys[i] + 0.5);
-        EXPECT_NEAR(result, i, 256.0); // Allow for larger error due to updates
+    for (const auto& [key, expected_value] : updated_values) {
+        double result = sig2model->lookup(key);
+        EXPECT_NEAR(result, expected_value, 1e-6);  // Ensure exact match for buffered values
     }
 }
 
