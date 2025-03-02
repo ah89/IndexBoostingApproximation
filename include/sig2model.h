@@ -42,7 +42,7 @@ class Sig2Model {
             int num_placeholders);
 
         void insert(const std::vector<double> &keys, const std::vector<double> &values);
-        double lookup(double key);
+        std::vector<double> lookup(double key);
         void update(double key, double value);
         void train();
 

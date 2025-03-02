@@ -29,7 +29,7 @@ protected:
             100,  // max_iterations
             K,
             N,
-            15    // num_placeholders
+            15 // num_placeholders
         );
     }
 
@@ -57,20 +57,26 @@ protected:
     }
 };
 
-// TEST_F(Sig2ModelTest, InsertAndLookup)
-// {
-//     auto [keys, values] = generate_random_data(1000, 0.0, 10000.0);
+TEST_F(Sig2ModelTest, InsertAndLookup)
+{
+    auto [keys, values] = generate_random_data(1000, 0.0, 10000.0);
 
-//     // Insert data
-//     sig2model->insert(keys, values);
+    // Insert data
+    sig2model->insert(keys, values);
 
-//     // Test lookup
-//     for (size_t i = 0; i < keys.size(); ++i)
-//     {
-//         double result = sig2model->lookup(keys[i]);
-//         EXPECT_NEAR(result, i, 5); // Allow for error within the specified range
-//     }
-// }
+    // Test lookup
+    for (size_t i = 0; i < keys.size(); ++i)
+    {
+        std::vector<double> results = sig2model->lookup(keys[i]);
+
+        // Check if expected value is in results
+        auto it = std::find(results.begin(), results.end(), values[i]);
+        if (it == results.end())
+        {
+            throw std::runtime_error("Expected value not found in lookup results!");
+        }
+    }
+}
 
 TEST_F(Sig2ModelTest, Update) {
     auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
@@ -78,8 +84,8 @@ TEST_F(Sig2ModelTest, Update) {
     // Insert initial data
     sig2model->insert(keys, values);
 
-    // Perform updates and track new values
-    std::map<double, double> updated_values; // Store expected updates
+    // Perform updates and store expected values
+    std::map<double, double> updated_values;
     for (size_t i = 0; i < 10; ++i) {
         double new_key = keys[i] + 0.5;
         double new_value = values[i] + 100.0;
@@ -89,56 +95,60 @@ TEST_F(Sig2ModelTest, Update) {
 
     // Test lookup after updates
     for (const auto& [key, expected_value] : updated_values) {
-        double result = sig2model->lookup(key);
-        EXPECT_NEAR(result, expected_value, 1e-6);  // Ensure exact match for buffered values
+        std::vector<double> results = sig2model->lookup(key);
+        if (std::find(results.begin(), results.end(), expected_value) == results.end()) {
+            throw std::runtime_error("Updated value not found in lookup results!");
+        }
     }
 }
 
-TEST_F(Sig2ModelTest, TrainAndRetrain)
-{
+TEST_F(Sig2ModelTest, TrainAndRetrain) {
     auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
 
     // Insert initial data
     sig2model->insert(keys, values);
 
-    // Perform multiple updates to trigger retraining
-    for (size_t i = 0; i < 2000; ++i)
-    {
+    // Perform updates to trigger retraining
+    for (size_t i = 0; i < 2000; ++i) {
         double new_key = 1001.0 + i;
         double new_value = 2000.0 + i;
         sig2model->update(new_key, new_value);
     }
 
     // Test lookup after retraining
-    for (size_t i = 0; i < 1000; ++i)
-    {
-        double result = sig2model->lookup(1001.0 + i);
-        EXPECT_NEAR(result, keys.size() + i, 256.0); // Allow for larger error due to retraining
+    for (size_t i = 0; i < 1000; ++i) {
+        double expected_value = 2000.0 + i;
+        std::vector<double> results = sig2model->lookup(1001.0 + i);
+        if (std::find(results.begin(), results.end(), expected_value) == results.end()) {
+            throw std::runtime_error("Retrained value not found in lookup results!");
+        }
     }
 }
 
-TEST_F(Sig2ModelTest, DistributionShift)
-{
+TEST_F(Sig2ModelTest, DistributionShift) {
     auto [keys1, values1] = generate_random_data(10000, 0.0, 100000.0);
     auto [keys2, values2] = generate_random_data(10000, 2000.0, 300000.0);
 
     // Insert initial data
     sig2model->insert(keys1, values1);
 
-    // Insert data from a different distribution
-    for (size_t i = 0; i < keys2.size(); ++i)
-    {
+    // Insert new distribution data
+    for (size_t i = 0; i < keys2.size(); ++i) {
         sig2model->update(keys2[i], values2[i]);
     }
 
     // Test lookup for both distributions
-    for (size_t i = 0; i < 1000; ++i)
-    {
-        double result1 = sig2model->lookup(keys1[i]);
-        EXPECT_NEAR(result1, i, 256.0);
+    for (size_t i = 0; i < 1000; ++i) {
+        std::vector<double> results1 = sig2model->lookup(keys1[i]);
+        std::vector<double> results2 = sig2model->lookup(keys2[i]);
 
-        double result2 = sig2model->lookup(keys2[i]);
-        EXPECT_NEAR(result2, keys1.size() + i, 256.0);
+        if (std::find(results1.begin(), results1.end(), values1[i]) == results1.end()) {
+            throw std::runtime_error("Value from first distribution not found!");
+        }
+
+        if (std::find(results2.begin(), results2.end(), values2[i]) == results2.end()) {
+            throw std::runtime_error("Value from second distribution not found!");
+        }
     }
 }
 
@@ -157,17 +167,24 @@ TEST_F(Sig2ModelTest, PerformanceBenchmark)
     for (size_t i = 0; i < 10000; ++i)
     {
         size_t index = rand() % keys.size();
-        volatile double result = sig2model->lookup(keys[index]);
+        std::vector<double> results = sig2model->lookup(keys[index]);  // Get list of values
+
+        // Ensure at least one value is returned (avoid empty lookup results)
+        ASSERT_FALSE(results.empty()) << "Lookup returned an empty result for key: " << keys[index];
+
+        // Access the first value to simulate usage (force compiler to not optimize away)
+        volatile double first_value = results[0];
     }
     end = std::chrono::high_resolution_clock::now();
     auto lookup_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
+    // Output performance metrics
     std::cout << "Insert time for 1M keys: " << insert_duration.count() << " ms" << std::endl;
     std::cout << "Average lookup time: " << lookup_duration.count() / 10000.0 << " µs" << std::endl;
 
-    // Add some performance expectations
-    EXPECT_LT(insert_duration.count(), 10000);         // Expect insert to take less than 10 seconds
-    EXPECT_LT(lookup_duration.count() / 10000.0, 100); // Expect average lookup to take less than 100 µs
+    // Add performance expectations
+    EXPECT_LT(insert_duration.count(), 10000);         // Expect insert to take < 10 seconds
+    EXPECT_LT(lookup_duration.count() / 10000.0, 100); // Expect avg lookup < 100 µs
 }
 
 int main(int argc, char **argv)

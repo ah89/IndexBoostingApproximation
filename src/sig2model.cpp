@@ -115,10 +115,10 @@ void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double
     // For S2M-Ψ, make this part comment
     // std::vector<double> keys_with_placeholders = placeholder_strategy_->insert_placeholders(values, *gmm_);
 
-    std::vector<double> keys_with_placeholders = keys;
+    std::vector<double> keys_with_placeholders = keys_;
 
-    std::vector<size_t> positions(keys.size());
-    for (size_t i = 0; i < keys.size(); ++i)
+    std::vector<size_t> positions(keys_with_placeholders.size());
+    for (size_t i = 0; i < keys_with_placeholders.size(); ++i)
     {
         positions[i] = i;
     }
@@ -128,53 +128,51 @@ void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double
     gmm_->fit(keys);
 
     // Train the ComplexNN
-    std::vector<std::vector<double>> X_pi(keys.size(), std::vector<double>(1));
-    std::vector<std::vector<double>> X_phi(keys.size(), std::vector<double>(1));
+    std::vector<std::vector<double>> X_pi(keys_with_placeholders.size(), std::vector<double>(1));
+    std::vector<std::vector<double>> X_phi(keys_with_placeholders.size(), std::vector<double>(1));
 
-    for (size_t i = 0; i < keys.size(); ++i)
+    for (size_t i = 0; i < keys_with_placeholders.size(); ++i)
     {
-        X_pi[i][0] = keys[i];
-        X_phi[i][0] = keys[i];
+        X_pi[i][0] = keys_with_placeholders[i];
+        X_phi[i][0] = keys_with_placeholders[i];
     }
 
     complex_nn_->train(X_pi, X_phi, positions, 100, 0.01);
 }
 
-double Sig2Model::lookup(double key)
+std::vector<double> Sig2Model::lookup(double key)
 {
-    // First, check if the key is in the buffer
+    std::vector<double> result_values;
+
+    // Check the buffer first
     auto buffer_result = buffer_manager_->lookup(key);
     if (buffer_result.has_value()) {
-        return static_cast<double>(buffer_result.value());  // Return buffered value
+        result_values.push_back(static_cast<double>(buffer_result.value()));
+        return result_values;
     }
 
     // If not found in buffer, proceed to learned index lookup
     size_t predicted_index = learned_index_->predict(key);
-    std::vector<double> nn_input_pi = {key};
-    std::vector<double> nn_input_phi = {key};
-
-    if (sigma_sigmoid_->hasUpdates()) {
-        auto [pi_output, phi_output] = complex_nn_->forward(nn_input_pi, nn_input_phi);
-
-        for (size_t i = 0; i < pi_output.size() / 3; ++i) {
-            double A = pi_output[i * 3];
-            double omega = pi_output[i * 3 + 1];
-            double phi = pi_output[i * 3 + 2];
-
-            predicted_index += static_cast<size_t>(A / (1 + std::exp(-omega * (key - phi))));
-        }
+    
+    // Apply sigmoid adjustments
+    if (sigma_sigmoid_->hasUpdates())
+    {
+        predicted_index += static_cast<size_t>(sigma_sigmoid_->adjust(key));
     }
 
-    predicted_index += static_cast<size_t>(sigma_sigmoid_->adjust(key));
+    predicted_index = std::min(predicted_index, keys_.size() - 1);
 
-    // Ensure index is within valid range
-    predicted_index = std::min(predicted_index, values_.size() - 1);
-
-    // Search for the closest value within error range
+    // Locate closest key range
+    auto it = std::lower_bound(keys_.begin(), keys_.end(), key);
     size_t lower_bound = std::max(static_cast<int>(predicted_index) - static_cast<int>(error_range_), 0);
     size_t upper_bound = std::min(predicted_index + static_cast<size_t>(error_range_), values_.size() - 1);
 
-    return values_[lower_bound];  // Return first value in the range
+    // Collect values in range
+    for (size_t i = lower_bound; i <= upper_bound; ++i) {
+        result_values.push_back(values_[i]);
+    }
+
+    return result_values;
 }
 
 void Sig2Model::update(double key, double value)
