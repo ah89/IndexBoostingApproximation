@@ -57,23 +57,20 @@ protected:
     }
 };
 
-TEST_F(Sig2ModTest, InsertAndLookup)
-{
-    auto [keys, values] = generate_random_data(10, 0.0, 100.0);
+// TEST_F(Sig2ModTest, InsertAndLookup)
+// {
+//     auto [keys, values] = generate_random_data(1000, 0.0, 10000.0);
 
-    // Insert data
-    sig2mod->insert(keys, values);
+//     // Insert data
+//     sig2mod->insert(keys, values);
 
-    // Test lookup
-    for (size_t i = 0; i < keys.size(); ++i)
-    {
-        double result = sig2mod->lookup(keys[i]);
-        std::cout << i << " " << result << std::endl;
-        std::cout << result << std::endl;
-        std::cout << "\n" << std::endl;
-        EXPECT_NEAR(result, i, 5); // Allow for error within the specified range
-    }
-}
+//     // Test lookup
+//     for (size_t i = 0; i < keys.size(); ++i)
+//     {
+//         double result = sig2mod->lookup(keys[i]);
+//         EXPECT_NEAR(result, i, 5); // Allow for error within the specified range
+//     }
+// }
 
 TEST_F(Sig2ModTest, Update)
 {

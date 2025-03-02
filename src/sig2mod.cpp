@@ -98,10 +98,6 @@ void Sig2Mod::insert(const std::vector<double> &keys, const std::vector<double> 
     {
         X_pi[i][0] = keys[i];
         X_phi[i][0] = keys[i];
-
-        // // Initialize y_pi and y_phi with zeros (simplified init impl)
-        // std::fill(y_pi[i].begin(), y_pi[i].end(), 0.0);
-        // std::fill(y_phi[i].begin(), y_phi[i].end(), 0.0);
     }
 
     complex_nn_->train(X_pi, X_phi, positions, 100, 0.01);

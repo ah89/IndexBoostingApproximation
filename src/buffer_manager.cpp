@@ -4,9 +4,11 @@ BufferManager::BufferManager(size_t buffer_size, size_t batch_size)
     : buffer_size_(buffer_size), batch_size_(batch_size) {}
 
 void BufferManager::add(double key, size_t value) {
-    buffer_.emplace_back(key, value);
+    buffer_[key] = value;
+
+    // Ensure we do not exceed buffer size
     if (buffer_.size() > buffer_size_) {
-        buffer_.erase(buffer_.begin());
+        buffer_.erase(buffer_.begin());  // Remove the smallest (oldest) key
     }
 }
 
@@ -25,12 +27,16 @@ size_t BufferManager::get_size() const {
 std::pair<std::vector<double>, std::vector<size_t>> BufferManager::get_batch() const {
     std::vector<double> keys;
     std::vector<size_t> values;
+    
     keys.reserve(std::min(batch_size_, buffer_.size()));
     values.reserve(std::min(batch_size_, buffer_.size()));
 
-    for (size_t i = 0; i < std::min(batch_size_, buffer_.size()); ++i) {
-        keys.push_back(buffer_[i].first);
-        values.push_back(static_cast<size_t>(buffer_[i].second));
+    size_t count = 0;
+    for (const auto& [key, value] : buffer_) {
+        if (count >= batch_size_) break;
+        keys.push_back(key);
+        values.push_back(value);
+        count++;
     }
 
     return {keys, values};

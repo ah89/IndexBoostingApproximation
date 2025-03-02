@@ -82,7 +82,6 @@ void RadixSpline::build(const std::vector<double> &keys, const std::vector<size_
                                            { return s.key < k; }) -
                           splines_.begin();
     }
-    std::cout << "The radix table built" << std::endl;
 }
 
 size_t RadixSpline::predict(double key) const
