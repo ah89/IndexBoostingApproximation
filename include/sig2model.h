@@ -28,9 +28,9 @@ class SigmaSigmoid {
     };
 
 
-class Sig2Mod {
+class Sig2Model {
 public:
-    Sig2Mod(
+    Sig2Model(
             double error_range,
             size_t buffer_size,
             size_t batch_size,

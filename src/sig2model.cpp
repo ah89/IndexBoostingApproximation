@@ -1,4 +1,4 @@
-#include "sig2mod.h"
+#include "sig2model.h"
 #include <algorithm>
 #include <cmath>
 
@@ -43,7 +43,7 @@ bool SigmaSigmoid::hasUpdates() const
     return has_updates_;
 }
 
-Sig2Mod::Sig2Mod(
+Sig2Model::Sig2Model(
     double error_range,
     size_t buffer_size,
     size_t batch_size,
@@ -63,7 +63,7 @@ Sig2Mod::Sig2Mod(
     sigma_sigmoid_ = std::make_unique<SigmaSigmoid>(N);
 }
 
-void Sig2Mod::insert(const std::vector<double> &keys, const std::vector<double> &values)
+void Sig2Model::insert(const std::vector<double> &keys, const std::vector<double> &values)
 {
 
     // For S2M-B, make this part comment
@@ -103,7 +103,7 @@ void Sig2Mod::insert(const std::vector<double> &keys, const std::vector<double> 
     complex_nn_->train(X_pi, X_phi, positions, 100, 0.01);
 }
 
-double Sig2Mod::lookup(double key)
+double Sig2Model::lookup(double key)
 {
     size_t predicted_index = learned_index_->predict(key);
     std::vector<double> nn_input_pi = {key};
@@ -116,7 +116,7 @@ double Sig2Mod::lookup(double key)
     return static_cast<double>(predicted_index);
 }
 
-void Sig2Mod::update(double key, double value)
+void Sig2Model::update(double key, double value)
 {
     buffer_manager_->add(key, value);
     if (buffer_manager_->is_full())
@@ -128,7 +128,7 @@ void Sig2Mod::update(double key, double value)
     }
 }
 
-void Sig2Mod::train()
+void Sig2Model::train()
 {
     control_unit_->trigger_retraining(*learned_index_, *complex_nn_, *gmm_, *buffer_manager_);
 

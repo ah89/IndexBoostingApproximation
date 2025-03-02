@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "sig2mod.h"
+#include "sig2model.h"
 #include "radix_spline.h"
 #include "neural_network.h"
 #include "gmm.h"
@@ -10,18 +10,18 @@
 #include <algorithm>
 #include <chrono>
 
-class Sig2ModTest : public ::testing::Test
+class Sig2ModelTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
-        // Initialize Sig2Mod with some default parameters
+        // Initialize Sig2Model with some default parameters
         int N = 3; // sigmoid_capacity
         int K = 3; // number of Gaussian components
         int hidden_dim = 15;
         int output_dim = 3 * (N + K);
 
-        sig2mod = std::make_unique<Sig2Mod>(
+        sig2model = std::make_unique<Sig2Model>(
             5.0,  // error_range
             5,    // buffer_size
             10,   // batch_size
@@ -33,7 +33,7 @@ protected:
         );
     }
 
-    std::unique_ptr<Sig2Mod> sig2mod;
+    std::unique_ptr<Sig2Model> sig2model;
 
     // Helper function to generate random data
     std::pair<std::vector<double>, std::vector<double>> generate_random_data(size_t n, double min_key, double max_key)
@@ -57,99 +57,99 @@ protected:
     }
 };
 
-// TEST_F(Sig2ModTest, InsertAndLookup)
+// TEST_F(Sig2ModelTest, InsertAndLookup)
 // {
 //     auto [keys, values] = generate_random_data(1000, 0.0, 10000.0);
 
 //     // Insert data
-//     sig2mod->insert(keys, values);
+//     sig2model->insert(keys, values);
 
 //     // Test lookup
 //     for (size_t i = 0; i < keys.size(); ++i)
 //     {
-//         double result = sig2mod->lookup(keys[i]);
+//         double result = sig2model->lookup(keys[i]);
 //         EXPECT_NEAR(result, i, 5); // Allow for error within the specified range
 //     }
 // }
 
-TEST_F(Sig2ModTest, Update)
+TEST_F(Sig2ModelTest, Update)
 {
     auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
 
     // Insert initial data
-    sig2mod->insert(keys, values);
+    sig2model->insert(keys, values);
 
     // Perform updates
     for (size_t i = 0; i < 10; ++i)
     {
         double new_key = keys[i] + 0.5;
         double new_value = values[i] + 100.0;
-        sig2mod->update(new_key, new_value);
+        sig2model->update(new_key, new_value);
     }
 
     // Test lookup after updates
     for (size_t i = 0; i < 10; ++i)
     {
-        double result = sig2mod->lookup(keys[i] + 0.5);
+        double result = sig2model->lookup(keys[i] + 0.5);
         EXPECT_NEAR(result, i, 256.0); // Allow for larger error due to updates
     }
 }
 
-TEST_F(Sig2ModTest, TrainAndRetrain)
+TEST_F(Sig2ModelTest, TrainAndRetrain)
 {
     auto [keys, values] = generate_random_data(10000, 0.0, 100000.0);
 
     // Insert initial data
-    sig2mod->insert(keys, values);
+    sig2model->insert(keys, values);
 
     // Perform multiple updates to trigger retraining
     for (size_t i = 0; i < 2000; ++i)
     {
         double new_key = 1001.0 + i;
         double new_value = 2000.0 + i;
-        sig2mod->update(new_key, new_value);
+        sig2model->update(new_key, new_value);
     }
 
     // Test lookup after retraining
     for (size_t i = 0; i < 1000; ++i)
     {
-        double result = sig2mod->lookup(1001.0 + i);
+        double result = sig2model->lookup(1001.0 + i);
         EXPECT_NEAR(result, keys.size() + i, 256.0); // Allow for larger error due to retraining
     }
 }
 
-TEST_F(Sig2ModTest, DistributionShift)
+TEST_F(Sig2ModelTest, DistributionShift)
 {
     auto [keys1, values1] = generate_random_data(10000, 0.0, 100000.0);
     auto [keys2, values2] = generate_random_data(10000, 2000.0, 300000.0);
 
     // Insert initial data
-    sig2mod->insert(keys1, values1);
+    sig2model->insert(keys1, values1);
 
     // Insert data from a different distribution
     for (size_t i = 0; i < keys2.size(); ++i)
     {
-        sig2mod->update(keys2[i], values2[i]);
+        sig2model->update(keys2[i], values2[i]);
     }
 
     // Test lookup for both distributions
     for (size_t i = 0; i < 1000; ++i)
     {
-        double result1 = sig2mod->lookup(keys1[i]);
+        double result1 = sig2model->lookup(keys1[i]);
         EXPECT_NEAR(result1, i, 256.0);
 
-        double result2 = sig2mod->lookup(keys2[i]);
+        double result2 = sig2model->lookup(keys2[i]);
         EXPECT_NEAR(result2, keys1.size() + i, 256.0);
     }
 }
 
-TEST_F(Sig2ModTest, PerformanceBenchmark)
+TEST_F(Sig2ModelTest, PerformanceBenchmark)
 {
     auto [keys, values] = generate_random_data(1000000, 0.0, 100000000.0);
 
     // Measure insert time
     auto start = std::chrono::high_resolution_clock::now();
-    sig2mod->insert(keys, values);
+    sig2model->insert(keys, values);
     auto end = std::chrono::high_resolution_clock::now();
     auto insert_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -158,7 +158,7 @@ TEST_F(Sig2ModTest, PerformanceBenchmark)
     for (size_t i = 0; i < 10000; ++i)
     {
         size_t index = rand() % keys.size();
-        volatile double result = sig2mod->lookup(keys[index]);
+        volatile double result = sig2model->lookup(keys[index]);
     }
     end = std::chrono::high_resolution_clock::now();
     auto lookup_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
